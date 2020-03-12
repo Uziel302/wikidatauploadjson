@@ -1,0 +1,115 @@
+# -*-coding:utf-8-*
+import json
+import logging
+from typing import Any, Dict, List, Optional
+import requests
+class WikidataSession:
+    URL = "https://www.wikidata.org/w/api.php"
+    assertUser = None
+    def __init__(
+        self,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        token: Optional[str] = None,
+        auth: Optional[str] = None
+    ):
+        self.username = username
+        self.password = password
+        self.auth = auth
+        self.S = requests.Session()
+        if username is not None and password is not None:
+            self.login()
+        if token is not None:
+            self.CSRF_TOKEN = token
+        # After logging in enable 'assertUser'-feature of the Mediawiki-API to
+        # make sure to never edit accidentally as IP
+        if username is not None:
+            self.assertUser = username
+
+    def login(self):
+        # Ask for a token
+        PARAMS_1 = {
+            "action": "query",
+            "meta": "tokens",
+            "type": "login",
+            "format": "json",
+        }
+        DATA = self.get(PARAMS_1)
+        LOGIN_TOKEN = DATA["query"]["tokens"]["logintoken"]
+
+        # connetion request
+        PARAMS_2 = {
+            "action": "login",
+            "lgname": self.username,
+            "lgpassword": self.password,
+            "format": "json",
+            "lgtoken": LOGIN_TOKEN,
+        }
+        self.post(PARAMS_2)
+
+        PARAMS_3 = {"action": "query", "meta": "tokens", "format": "json"}
+        DATA = self.get(PARAMS_3)
+        self.CSRF_TOKEN = DATA["query"]["tokens"]["csrftoken"]
+
+    def post(self, data: Dict[str, str]) -> Any:
+        if data.get("token") == "__AUTO__":
+            data["token"] = self.CSRF_TOKEN
+        if "assertuser" not in data and self.assertUser is not None:
+            data["assertuser"] = self.assertUser
+        R = self.S.post(self.URL, data=data, auth=self.auth)
+        if R.status_code != 200:
+            raise Exception(
+                "POST was unsuccessfull ({}): {}".format(R.status_code, R.text)
+            )
+        DATA = R.json()
+        if "error" in DATA:
+            raise PermissionError("API returned error: " + str(DATA["error"]))
+        return DATA
+        
+    def get(self, data: Dict[str, str]) -> Any:
+        """Send a GET request to wikidata
+        :param data: Parameters to send via GET
+        :type  data: Dict[str, str]
+        :returns: Answer form the server as Objekt
+        :rtype: Any
+        """
+        R = self.S.get(self.URL, params=data)
+        if R.status_code != 200:
+            raise Exception(
+                "GET was unsuccessfull ({}): {}".format(R.status_code, R.text)
+            )
+        return R.json()
+
+def create_lexeme(repo,data_lex):
+
+    # Send a post to edit a lexeme
+    PARAMS = {
+        "action": "wbeditentity",
+        "format": "json",
+        "bot": "1",
+        "maxlag":"5",
+        "new":"lexeme", 
+        "token": "__AUTO__",
+        "data": data_lex,
+    }
+    
+def update_lexeme(repo,lexeme_id,data_lex):
+
+    # Send a post to edit a lexeme
+    PARAMS = {
+        "action": "wbeditentity",
+        "format": "json",
+        "bot": "1",
+        "maxlag":"5",
+        "id":lexeme_id, 
+        "token": "__AUTO__",
+        "data": data_lex,
+    }
+
+    DATA = repo.post(PARAMS)
+
+    return 1
+    
+repo = WikidataSession("Uzielbot", "Asaf302302")
+#create_lexeme(repo,'{"lemmas":{"la":{"language":"la","value":"damnula"}},"lexicalCategory":"Q1084","language":"Q397","claims":{"P5185":[{"mainsnak":{"snaktype":"value","property":"P5185","datavalue":{"value":{"id":"Q1775415"},"type":"wikibase-entityid"},"datatype":"wikibase-item"},"type":"statement","rank":"normal"}]}}')
+#update_lexeme(repo,lexeme_id,'JSON'}
