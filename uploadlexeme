@@ -113,3 +113,4 @@ def update_lexeme(repo,lexeme_id,data_lex):
 repo = WikidataSession("username", "password")
 #create_lexeme(repo,'{"lemmas":{"la":{"language":"la","value":"damnula"}},"lexicalCategory":"Q1084","language":"Q397","claims":{"P5185":[{"mainsnak":{"snaktype":"value","property":"P5185","datavalue":{"value":{"id":"Q1775415"},"type":"wikibase-entityid"},"datatype":"wikibase-item"},"type":"statement","rank":"normal"}]}}')
 #update_lexeme(repo,lexeme_id,'JSON'}
+to add form: "add": "", before presentation
