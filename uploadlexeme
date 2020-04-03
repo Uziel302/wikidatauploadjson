@@ -1,6 +1,7 @@
 # -*-coding:utf-8-*
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 import requests
 class WikidataSession:
@@ -56,14 +57,21 @@ class WikidataSession:
             data["token"] = self.CSRF_TOKEN
         if "assertuser" not in data and self.assertUser is not None:
             data["assertuser"] = self.assertUser
-        R = self.S.post(self.URL, data=data, auth=self.auth)
-        if R.status_code != 200:
-            raise Exception(
-                "POST was unsuccessfull ({}): {}".format(R.status_code, R.text)
-            )
-        DATA = R.json()
-        if "error" in DATA:
-            raise PermissionError("API returned error: " + str(DATA["error"]))
+        for i in range(500):
+            R = self.S.post(self.URL, data=data, auth=self.auth)
+            if R.status_code != 200:
+                raise Exception(
+                    "POST was unsuccessfull ({}): {}".format(R.status_code, R.text)
+                 )
+            DATA = R.json()
+            if "error" in DATA:
+                print(i)
+                print("GET was unsuccessfull ({}): {}".format(R.status_code, R.text))
+                time.sleep(15)
+            else:
+            	print("Success")
+            	return DATA
+
         return DATA
         
     def get(self, data: Dict[str, str]) -> Any:
@@ -92,7 +100,10 @@ def create_lexeme(repo,data_lex):
         "token": "__AUTO__",
         "data": data_lex,
     }
-    
+    DATA = repo.post(PARAMS)
+
+    return 1    
+
 def update_lexeme(repo,lexeme_id,data_lex):
 
     # Send a post to edit a lexeme
@@ -105,6 +116,7 @@ def update_lexeme(repo,lexeme_id,data_lex):
         "token": "__AUTO__",
         "data": data_lex,
     }
+    
 
     DATA = repo.post(PARAMS)
 
